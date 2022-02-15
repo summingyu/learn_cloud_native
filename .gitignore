@@ -1,3 +1,5 @@
 examples/
 .gitmodules
 examples*
+bin/*
+!.gitkeep

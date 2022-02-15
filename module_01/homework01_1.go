@@ -2,15 +2,16 @@ package main
 
 import "fmt"
 
+var ch = make(chan int)
 func main() {
 	words := []string{"I", "am", "stupid", "and", "weak"}
-	useIfWords := useIf(words)
-	useSwitchWords := useSwitch(words)
-	uesMapWords := useMap(words)
 	fmt.Printf("words:\t%v,\n", words)
-	fmt.Printf("useIfWords:\t%v,\n", useIfWords)
-	fmt.Printf("useSwitchWords:\t%v,\n", useSwitchWords)
-	fmt.Printf("uesMapWords:\t%v\n", uesMapWords)
+	go useIf(words)
+	go useSwitch(words)
+	go useMap(words)
+	for i:=0; i<3; i++ {
+		<- ch
+	}
 }
 
 func useIf(words []string) (new_words []string) {
@@ -22,6 +23,8 @@ func useIf(words []string) (new_words []string) {
 		}
 		new_words = append(new_words, word)
 	}
+	fmt.Printf("useIfWords:\t%v\n",new_words)
+	ch <- 1
 	return
 }
 
@@ -36,6 +39,8 @@ func useSwitch(words []string) (new_words []string) {
 		}
 		new_words = append(new_words, word)
 	}
+	fmt.Printf("useSwitchWords:\t%v\n", new_words)
+	ch <- 1
 	return
 }
 
@@ -47,5 +52,7 @@ func useMap(words []string) (new_words []string) {
 		}
 		new_words = append(new_words, word)
 	}
+	fmt.Printf("uesMapWords:\t%v\n", new_words)
+	ch <- 1
 	return
 }

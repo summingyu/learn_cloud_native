@@ -14,7 +14,11 @@ import (
 )
 
 func main() {
-	flag.Set("v", "4")
+	flag.Parse()
+	defer glog.Flush()
+    flag.Set("v", "4")
+	flag.Set("logtostderr", "true")
+	flag.Set("alsologtostderr", "true")
 	glog.V(2).Info("Starting http server...")
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", rootHandler)

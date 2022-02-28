@@ -5,6 +5,7 @@ import (
 	"flag"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -56,10 +57,26 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 3. 获取客户端ip
-	IPPort := r.RemoteAddr
-	IP := strings.Split(IPPort, ":")[0]
-	glog.Infof("client IP: %s, status: %d\n", IP, http.StatusOK)
+	clientIP := getCurrentIP(r)
+	glog.Infof("client IP: %s, status: %d\n", clientIP, http.StatusOK)
+	// write只响应一次
 	w.Write(jsonResp)
+}
+
+func getCurrentIP(r *http.Request) string {
+	xForwardedFor := r.Header.Get("X-Forwarded-For")
+	ip := strings.TrimSpace(strings.Split(xForwardedFor, ",")[0])
+	if ip != "" {
+		return ip
+	}
+	ip = strings.TrimSpace(r.Header.Get("X-Real-Ip"))
+	if ip != "" {
+		return ip
+	}
+	if ip, _, err := net.SplitHostPort(strings.TrimSpace(r.RemoteAddr)); err == nil {
+		return ip
+	}
+	return ""
 }
 
 func healthz(w http.ResponseWriter, r *http.Request) {

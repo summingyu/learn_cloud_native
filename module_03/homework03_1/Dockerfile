@@ -12,7 +12,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o httpserv
 
 FROM debian:stable
 
-RUN useradd -m httpserver -u 1000 && apt-get update && apt-get install bash curl -y; apt-get autoclean; rm -rf /var/lib/apt/lists/*
+RUN useradd -m httpserver -u 1000 && apt-get update && apt-get install bash curl -y && apt-get autoclean && rm -rf /var/lib/apt/lists/*
 
 USER httpserver:httpserver
 RUN mkdir -p /home/httpserver

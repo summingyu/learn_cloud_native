@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"io"
@@ -9,25 +10,51 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
+	"time"
 
-	"github.com/golang/glog"
+	klog "k8s.io/klog/v2"
 )
 
-func main() {
-	flag.Parse()
-	defer glog.Flush()
-    flag.Set("v", "4")
-	flag.Set("logtostderr", "true")
-	flag.Set("alsologtostderr", "true")
-	glog.V(2).Info("Starting http server...")
+type Server interface {
+	ListenAndServe() error
+	Shutdown(context.Context) error
+}
+
+func handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", rootHandler)
 	mux.HandleFunc("/healthz", healthz)
 	mux.HandleFunc("/debug/pprof/", pprof.Index)
-	err := http.ListenAndServe(":80", mux)
-	if err != nil {
-		log.Fatal(err)
+	return mux
+}
+
+func main() {
+	flag.Parse()
+	defer klog.Flush()
+	flag.Set("v", "4")
+	flag.Set("logtostderr", "true")
+	flag.Set("alsologtostderr", "true")
+	klog.Info("Starting http server...")
+	server := &http.Server{
+		Addr:    ":80",
+		Handler: handler(),
+	}
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			klog.Fatal("ListenAndServe()=%+s", err)
+		}
+	}()
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
+	osCall := <-ch
+	klog.Infof("system call: %+v", osCall)
+	ctxShutDown, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	if err := server.Shutdown(ctxShutDown); err != nil {
+		klog.Fatalf("server.Shutdown(ctxShutdown)=%+s", err)
 	}
 }
 
@@ -46,7 +73,7 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 	VERSION, ex := os.LookupEnv("VERSION")
 	if !ex {
 		VERSION = "0"
-		glog.Warning("VERSION not found, set ",VERSION)
+		klog.Warning("VERSION not found, set ", VERSION)
 	}
 	w.Header().Add("Version", VERSION)
 	resp["Version"] = VERSION
@@ -58,7 +85,7 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 
 	// 3. 获取客户端ip
 	clientIP := getCurrentIP(r)
-	glog.Infof("client IP: %s, status: %d\n", clientIP, http.StatusOK)
+	klog.Infof("client IP: %s, status: %d\n", clientIP, http.StatusOK)
 	// write只响应一次
 	w.Write(jsonResp)
 }
@@ -81,4 +108,5 @@ func getCurrentIP(r *http.Request) string {
 
 func healthz(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, "200\n")
+	klog.Infof("healthz status: %d\n", http.StatusOK)
 }

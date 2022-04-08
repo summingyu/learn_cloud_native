@@ -11,7 +11,7 @@ COPY ./main.go /workspace/
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o httpserver main.go
 
 FROM scratch
-ENV VERSION=v0.2.0
+ENV VERSION=v0.3.0
 COPY --from=build /workspace/httpserver /
 EXPOSE 80
 ENTRYPOINT ["/httpserver"]

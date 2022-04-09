@@ -1,0 +1,6 @@
+[submodule "examples"]
+	path = examples
+	url = https://github.com/cncamp/golang.git
+[submodule "101"]
+	path = 101
+	url = https://github.com/cncamp/101.git

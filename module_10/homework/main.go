@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
+	"fmt"
 	"io"
 	"log"
+	"math/rand"
 	"net"
 	"net/http"
 	"net/http/pprof"
@@ -15,8 +17,8 @@ import (
 	"syscall"
 	"time"
 
-	klog "k8s.io/klog/v2"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	klog "k8s.io/klog/v2"
 
 	"httpserver/metrics"
 )
@@ -31,6 +33,7 @@ func handler() http.Handler {
 	mux.HandleFunc("/", rootHandler)
 	mux.HandleFunc("/healthz", healthz)
 	mux.HandleFunc("/debug/pprof/", pprof.Index)
+	mux.HandleFunc("/images", images)
 	mux.Handle("/metrics", promhttp.Handler())
 	return mux
 }
@@ -114,4 +117,12 @@ func getCurrentIP(r *http.Request) string {
 func healthz(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, "200\n")
 	klog.Infof("healthz status: %d\n", http.StatusOK)
+}
+
+func images(w http.ResponseWriter, r *http.Request) {
+	timer := metrics.NewTimer()
+	defer timer.ObserveTotal()
+	randInt := rand.Intn(2000)
+	time.Sleep(time.Millisecond * time.Duration(randInt))
+	w.Write([]byte(fmt.Sprintf("<h1>%d<h1>", randInt)))
 }

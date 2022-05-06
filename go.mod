@@ -1,6 +1,6 @@
 module learnCloudNative
 
-go 1.18
+go 1.17
 
 require k8s.io/klog/v2 v2.60.1
 

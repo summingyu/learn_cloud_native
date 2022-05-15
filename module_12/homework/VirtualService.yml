@@ -1,0 +1,22 @@
+kind: VirtualService
+metadata:
+  name: httpserver
+spec:
+  hosts:
+    - "*"
+  gateways:
+    - gateway
+  http:
+    - route:
+        - destination:
+            host: httpserver.default.svc.cluster.local
+            port:
+              number: 80
+      fault:
+        - abort:
+          httpStatus: 500
+          percentage:
+            value: 50
+          delay:
+            percent: 50
+            fixedDelay: 5s
